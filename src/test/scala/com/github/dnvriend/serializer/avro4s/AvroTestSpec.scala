@@ -79,8 +79,8 @@ object Decoder {
     }
   }
 
-  implicit def AvroSchemaDecoder[A <: Event: ToRecord: FromRecord: RecordFormat] = new Decoder[AvroCommand, A] {
-    override def decode(in: AvroCommand): A = {
+  implicit def AvroSchemaDecoder[A <: Event: ToRecord: FromRecord: RecordFormat] = new Decoder[AvroEvolution, A] {
+    override def decode(in: AvroEvolution): A = {
       val gdr = new GenericDatumReader[GenericRecord](in.oldSchema, in.newSchema) // (writer, reader)
       val seek = new SeekableByteArrayInput(implicitly[Decoder[String, Array[Byte]]].decode(in.base64))
       val binDecoder = DecoderFactory.get().binaryDecoder(seek, null)
@@ -95,15 +95,72 @@ trait Decoder[IN, OUT] {
   def decode(in: IN): OUT
 }
 
-case class AvroCommand(base64: String, oldSchema: Schema, newSchema: Schema)
+case class AvroEvolution(base64: String, oldSchema: Schema, newSchema: Schema)
 
 trait Event
 final case class MovieChangedV1(title: String, year: Int) extends Event
 final case class MovieChangedV2(title: String, year: Int, director: String) extends Event
 final case class MovieChangedV3(title: String, released_year: Int, director: String) extends Event
+final case class MovieChangedV4(title: String, director: String, won_oscars: Int) extends Event
 
 class AvroTestSpec extends TestSpec {
   implicit class StringToSchema(json: String) {
     def toSchema: Schema = new (Schema.Parser).parse(json)
   }
+}
+
+object SchemaRegistry {
+  val registry = Map(
+    1 → """
+          |{
+          |  "type" : "record",
+          |  "name" : "MovieChanged",
+          |  "version" : 1,
+          |  "namespace" : "com.github.dnvriend.serializer.avro4s",
+          |  "fields" : [
+          |   { "name" : "title", "type" : "string" },
+          |   { "name" : "year", "type" : "int" }
+          |  ]
+          |}
+        """.stripMargin,
+    2 → """
+         |{
+         |  "type" : "record",
+         |  "name" : "MovieChanged",
+         |  "version" : 2,
+         |  "namespace" : "com.github.dnvriend.serializer.avro4s",
+         |  "fields" : [
+         |   { "name" : "title", "type" : "string" },
+         |   { "name" : "year", "type" : "int" },
+         |   { "name" : "director", "type" : "string" }
+         |  ]
+         |}
+       """.stripMargin,
+    3 → """
+           |{
+           |  "type" : "record",
+           |  "name" : "MovieChanged",
+           |  "version" : 3,
+           |  "namespace" : "com.github.dnvriend.serializer.avro4s",
+           |  "fields" : [
+           |   { "name" : "title", "type" : "string"},
+           |   { "name" : "released_year", "type" : "int", "aliases" : ["year"] },
+           |   { "name" : "director", "type" : "string", "default" : "unknown" }
+           |  ]
+           |}
+         """.stripMargin,
+    4 → """
+             |{
+             |  "type" : "record",
+             |  "name" : "MovieChanged",
+             |  "version" : 4,
+             |  "namespace" : "com.github.dnvriend.serializer.avro4s",
+             |  "fields" : [
+             |   { "name" : "title", "type" : "string"},
+             |   { "name" : "director", "type" : "string", "default" : "unknown" },
+             |   { "name" : "won_oscars", "type" : "int", "default": 0}
+             |  ]
+             |}
+           """.stripMargin
+  )
 }

@@ -65,104 +65,52 @@ class AvroSENoOldClassesTest extends AvroTestSpec {
     decoder.decode("BmZvb4wfBmJhcg==") shouldBe MovieChangedV3("foo", 1990, "bar")
   }
 
+  "MovieChangedV4" should "encode to base64" in {
+    val event = MovieChangedV4("foo", "bar", 1)
+    val encoder = implicitly[Encoder[MovieChangedV4, String]]
+    val base64String = encoder.encode(event)
+    base64String shouldBe "BmZvbwZiYXIC"
+  }
+
+  it should "decode from base64" in {
+    val decoder = implicitly[Decoder[String, MovieChangedV4]]
+    decoder.decode("BmZvbwZiYXIC") shouldBe MovieChangedV4("foo", "bar", 1)
+  }
+
   "v1 to v2" should "decode with format" in {
-    val decoder = implicitly[Decoder[AvroCommand, MovieChangedV2]]
-    decoder.decode(AvroCommand(
+    val decoder = implicitly[Decoder[AvroEvolution, MovieChangedV2]]
+    decoder.decode(AvroEvolution(
       "BmZvb4wf",
-      oldSchema =
-        """
-            |{
-            |  "type" : "record",
-            |  "name" : "MovieChanged",
-            |  "version" : 1,
-            |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-            |  "fields" : [
-            |   { "name" : "title", "type" : "string" },
-            |   { "name" : "year", "type" : "int" }
-            |  ]
-            |}
-          """.stripMargin.toSchema,
-      newSchema =
-        """
-          |{
-          |  "type" : "record",
-          |  "name" : "MovieChanged",
-          |  "version" : 2,
-          |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-          |  "fields" : [
-          |   { "name" : "title", "type" : "string" },
-          |   { "name" : "year", "type" : "int" },
-          |   { "name" : "director", "type" : "string", "default" : "unknown" }
-          |  ]
-          |}
-        """.stripMargin.toSchema
+      oldSchema = SchemaRegistry.registry(1).toSchema,
+      newSchema = SchemaRegistry.registry(2).toSchema
     )) shouldBe MovieChangedV2("foo", 1990, "unknown")
   }
 
   "v2 to v3" should "decode with format" in {
-    val decoder = implicitly[Decoder[AvroCommand, MovieChangedV3]]
-    decoder.decode(AvroCommand(
+    val decoder = implicitly[Decoder[AvroEvolution, MovieChangedV3]]
+    decoder.decode(AvroEvolution(
       "BmZvb4wfBmJhcg==",
-      oldSchema = """
-        |{
-        |  "type" : "record",
-        |  "name" : "MovieChanged",
-        |  "version" : 2,
-        |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-        |  "fields" : [
-        |   { "name" : "title", "type" : "string" },
-        |   { "name" : "year", "type" : "int" },
-        |   { "name" : "director", "type" : "string" }
-        |  ]
-        |}
-      """.stripMargin.toSchema,
-      newSchema = """
-        |{
-        |  "type" : "record",
-        |  "name" : "MovieChanged",
-        |  "version" : 3,
-        |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-        |  "fields" : [
-        |   { "name" : "title", "type" : "string"},
-        |   { "name" : "released_year", "type" : "int", "aliases" : ["year"] },
-        |   { "name" : "director", "type" : "string"}
-        |  ]
-        |}
-      """.stripMargin.toSchema
+      oldSchema = SchemaRegistry.registry(2).toSchema,
+      newSchema = SchemaRegistry.registry(3).toSchema
     )) shouldBe MovieChangedV3("foo", 1990, "bar")
   }
 
   "v1 to v3" should "decode with format" in {
-    val decoder = implicitly[Decoder[AvroCommand, MovieChangedV3]]
-    decoder.decode(AvroCommand(
+    val decoder = implicitly[Decoder[AvroEvolution, MovieChangedV3]]
+    decoder.decode(AvroEvolution(
       "BmZvb4wf",
-      oldSchema =
-        """
-        |{
-        |  "type" : "record",
-        |  "name" : "MovieChanged",
-        |  "version" : 1,
-        |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-        |  "fields" : [
-        |   { "name" : "title", "type" : "string" },
-        |   { "name" : "year", "type" : "int" }
-        |  ]
-        |}
-      """.stripMargin.toSchema,
-      newSchema =
-        """
-        |{
-        |  "type" : "record",
-        |  "name" : "MovieChanged",
-        |  "version" : 3,
-        |  "namespace" : "com.github.dnvriend.serializer.avro4s",
-        |  "fields" : [
-        |   { "name" : "title", "type" : "string"},
-        |   { "name" : "released_year", "type" : "int", "aliases" : ["year"] },
-        |   { "name" : "director", "type" : "string", "default" : "unknown" }
-        |  ]
-        |}
-      """.stripMargin.toSchema
+      oldSchema = SchemaRegistry.registry(1).toSchema,
+      newSchema = SchemaRegistry.registry(3).toSchema
     )) shouldBe MovieChangedV3("foo", 1990, "unknown")
   }
+
+  "v1 to v4" should "decode with format" in {
+    val decoder = implicitly[Decoder[AvroEvolution, MovieChangedV4]]
+    decoder.decode(AvroEvolution(
+      "BmZvb4wf",
+      oldSchema = SchemaRegistry.registry(1).toSchema,
+      newSchema = SchemaRegistry.registry(4).toSchema
+    )) shouldBe MovieChangedV4("foo", "unknown", 0)
+  }
+
 }
