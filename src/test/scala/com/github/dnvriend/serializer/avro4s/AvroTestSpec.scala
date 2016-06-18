@@ -132,7 +132,7 @@ object SchemaRegistry {
          |  "fields" : [
          |   { "name" : "title", "type" : "string" },
          |   { "name" : "year", "type" : "int" },
-         |   { "name" : "director", "type" : "string" }
+         |   { "name" : "director", "type" : "string" , "default": "unknown" }
          |  ]
          |}
        """.stripMargin,
